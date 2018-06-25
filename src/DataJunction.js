@@ -1,35 +1,33 @@
-import "react-bootstrap-table-next/dist/react-bootstrap-table2.min.css";
-import BootstrapTable from "react-bootstrap-table-next";
-import React, { Component } from "react";
-import "react-bootstrap-table2-filter/dist/react-bootstrap-table2-filter.min.css";
+import React, { Component } from 'react';
+import BootstrapTable from 'react-bootstrap-table-next';
+import 'react-bootstrap-table-next/dist/react-bootstrap-table2.min.css';
 import filterFactory, {
-  selectFilter,
   dateFilter,
+  selectFilter,
   textFilter
-} from "react-bootstrap-table2-filter";
-import paginationFactory from "react-bootstrap-table2-paginator";
+} from 'react-bootstrap-table2-filter';
+import 'react-bootstrap-table2-filter/dist/react-bootstrap-table2-filter.min.css';
+import overlayFactory from 'react-bootstrap-table2-overlay';
+import paginationFactory from 'react-bootstrap-table2-paginator';
 
 const origRows = [
   {
-    id: 1233,
-    request_date: "2018-06-10",
-    requested_by: "Andrew Jennings",
-    measurement_stream: ["Real Power Consumed (kW)"].join(", "),
     details: `
-      Start Date: 10/04/2018
-      End Date: 10/05/2018
-      Timezone: Australia/Sydney,
-      Measurement Data Period: 30 mins
-      # Meters: 30
+    Start Date: 10/04/2018
+    End Date: 10/05/2018
+    Timezone: Australia/Sydney,
+    Measurement Data Period: 30 mins
+    # Meters: 30
     `,
-    link_expiry: new Date("10/07/2018"),
-    status: "Ready"
+    download_url: 'blahbah.com/bah.csv',
+    id: 1233,
+    link_expiry: new Date('10/07/2018'),
+    measurement_stream: ['Real Power Consumed (kW)'].join(', '),
+    request_date: '2018-06-10',
+    requested_by: 'Andrew Jennings',
+    status: 'Ready'
   },
   {
-    id: 112412,
-    request_date: "2018-06-10",
-    requested_by: "Hagrid Jennings",
-    measurement_stream: ["Energy Consumed (kWh)"].join(", "),
     details: `
       Start Date: 10/03/2018
       End Date: 10/04/2018
@@ -37,31 +35,39 @@ const origRows = [
       Measurement Data Period: 15 mins
       # Meters: 30
     `,
-    link_expiry: new Date("10/07/2018"),
-    status: "Processing"
+    download_url: 'blahbah.com/bah.csv',
+    id: 112412,
+    link_expiry: new Date('10/07/2018'),
+    measurement_stream: ['Energy Consumed (kWh)'].join(', '),
+    request_date: '2018-06-10',
+    requested_by: 'Hagrid Jennings',
+    status: 'Processing'
   }
 ];
-let manyRows = [];
+
+const manyRows = [];
 
 function addDays(date, days) {
-  var result = new Date(date);
+  const result = new Date(date);
   result.setDate(result.getDate() + days);
   return result;
 }
 
-for (let i = 0; i < 1000; i++) {
-  manyRows.push(
-    Object.assign({}, origRows[0], {
-      id: Math.floor(Math.random() * 1000),
-      request_date: addDays(new Date(), Math.floor(Math.random() * 100))
-    })
-  );
-  manyRows.push(
-    Object.assign({}, origRows[1], {
-      id: Math.floor(Math.random() * 1000),
-      request_date: addDays(new Date(), Math.floor(Math.random() * 100))
-    })
-  );
+let baseID = 0;
+
+for (let i = 0; i < 1000; i += 1) {
+  manyRows.push({
+    ...origRows[0],
+    id: baseID,
+    request_date: addDays(new Date(), Math.floor(Math.random() * 100))
+  });
+  baseID += 1;
+  manyRows.push({
+    ...origRows[1],
+    id: baseID,
+    request_date: addDays(new Date(), Math.floor(Math.random() * 100))
+  });
+  baseID += 1;
 }
 
 function getAvailableOptions(columnKey) {
@@ -76,65 +82,84 @@ function getAvailableOptions(columnKey) {
   }, {});
 }
 
+function multiLineFormatter(cellContents) {
+  return (
+    <React.Fragment>
+      {cellContents
+        .split('\n')
+        .filter(text => text)
+        .map(text => <p key={text}>{text}</p>)}
+    </React.Fragment>
+  );
+}
+
+function linkFormatter(cellContents) {
+  if (cellContents) {
+    return (
+      <a href={cellContents} title="Download File">
+        Download
+      </a>
+    );
+  }
+  // TODO - clock icon
+  return <i className="fas fa-clock" />;
+}
+
 const columns = [
   {
-    dataField: "status",
-    text: "Status",
-    sort: true,
+    dataField: 'request_date',
+    filter: dateFilter(),
+    text: 'Request Date'
+  },
+  {
+    dataField: 'measurement_stream',
     filter: selectFilter({
-      options: getAvailableOptions("status")
-    })
+      options: { ...getAvailableOptions('measurement_stream') }
+    }),
+    text: 'Measurement Stream'
   },
   {
-    dataField: "request_date",
-    text: "Request Date",
-    width: 150,
-    filterable: true,
-    sort: true,
-    filter: dateFilter()
+    dataField: 'details',
+    filter: textFilter(),
+    formatter: multiLineFormatter,
+    text: 'Data Export Details'
   },
   {
-    dataField: "requested_by",
-    text: "Requested By",
-    width: 150,
-    filterable: true,
-    sort: true,
+    dataField: 'requested_by',
     filter: selectFilter({
-      options: getAvailableOptions("requested_by")
-    })
+      options: { ...getAvailableOptions('requested_by') }
+    }),
+    text: 'Requested By'
   },
   {
-    dataField: "details",
-    text: "Details",
-    filter: textFilter()
+    dataField: 'download_url',
+    formatter: linkFormatter,
+    headerStyle: () => {
+      return { width: '80px', textAlign: 'center' };
+    },
+    text: 'Download'
   },
   {
-    dataField: "measurement_stream",
-    text: "Measurement Streams",
-    width: 250,
-    filterable: true,
-    sort: true,
+    dataField: 'status',
     filter: selectFilter({
-      options: getAvailableOptions("measurement_stream")
-    })
+      options: {
+        'Processing': 'Processing',
+        'Ready': 'Ready',
+      }
+    }),
+    text: 'Status'
   },
   {
-    dataField: "link_expiry",
-    text: "Link Expiry",
-    width: 150,
-    filterable: true,
-    sort: true,
-    filter: dateFilter()
+    dataField: 'link_expiry',
+    filter: dateFilter(),
+    text: 'Link Expiry'
   }
 ];
 
 class DataJunction extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      rows: manyRows.slice(0)
-    };
-  }
+  state = {
+    rows: manyRows.slice(0)
+  };
 
   render() {
     return (
@@ -144,10 +169,11 @@ class DataJunction extends Component {
         columns={columns}
         filter={filterFactory()}
         pagination={paginationFactory()}
-        selectRow={{
-          mode: "checkbox",
-          clickToSelect: true
-        }}
+        overlay={overlayFactory({
+          background: 'rgba(192,192,192,0.3)',
+          spinner: true
+        })}
+        loading={false}
       />
     );
   }
